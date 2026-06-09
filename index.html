@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bird of Light Beacon</title>
+
+    <style>
+
+        *{
+            box-sizing:border-box;
+            margin:0;
+            padding:0;
+        }
+
+        body, html{
+            width:100%;
+            height:100%;
+            overflow:hidden;
+            font-family:'Bodoni MT','Didot','Georgia',serif;
+            background-color:#1a1105;
+        }
+
+        .wrapper{
+            position:relative;
+            width:100%;
+            height:100%;
+
+            background-image:url('img/imagemdefundo.jpg');
+            background-size:cover;
+            background-position:center;
+
+            display:flex;
+            justify-content:center;
+            align-items:center;
+        }
+
+        /* SIGILO */
+
+        .guia-sigilo{
+            position:absolute;
+
+            width:600px;
+            height:600px;
+
+            background-image:url('img/lightsigil.png');
+            background-size:contain;
+            background-position:center;
+            background-repeat:no-repeat;
+
+            opacity:0.25;
+
+            z-index:1;
+
+            pointer-events:none;
+
+            mix-blend-mode:multiply;
+
+            transition:opacity 1.5s ease-out;
+        }
+
+        @media (max-width:650px){
+
+            .guia-sigilo{
+                width:90vw;
+                height:90vw;
+            }
+        }
+
+        .guia-sigilo.esconder{
+            opacity:0;
+        }
+
+        /* MENSAGEM */
+
+        .mensagem-oculta{
+            position:absolute;
+
+            text-align:center;
+
+            max-width:80%;
+
+            padding:30px;
+
+            color:#1e1926;
+
+            opacity:0;
+
+            transform:scale(0.9);
+
+            transition:
+                opacity 2s ease-in-out,
+                transform 2s ease-in-out;
+
+            z-index:2;
+        }
+
+        .mensagem-oculta.revelada{
+            opacity:1;
+            transform:scale(1);
+        }
+
+        .mensagem-oculta h1{
+            font-size:2.5rem;
+
+            margin-bottom:20px;
+
+            color:#1e1926;
+
+            -webkit-text-stroke:6px #ffeaa7;
+
+            paint-order:stroke fill;
+        }
+
+        .mensagem-oculta p{
+            font-size:1.3rem;
+            line-height:1.6;
+        }
+
+        /* CANVAS */
+
+        canvas{
+            position:absolute;
+
+            top:0;
+            left:0;
+
+            width:100%;
+            height:100%;
+
+            z-index:3;
+
+            cursor:crosshair;
+
+            transition:opacity 1.5s ease-out;
+        }
+
+        canvas.desaparecer{
+            opacity:0;
+            pointer-events:none;
+        }
+
+        /* TEXTO */
+
+        .instrucao{
+            position:absolute;
+
+            bottom:50px;
+
+            color:#1e1926;
+
+            font-style:italic;
+
+            font-size:1.2rem;
+
+            z-index:4;
+
+            pointer-events:none;
+
+            animation:pulsar 2s infinite alternate;
+
+            text-align:center;
+
+            width:100%;
+
+            font-weight:bold;
+        }
+
+        @keyframes pulsar{
+
+            from{
+                opacity:0.4;
+            }
+
+            to{
+                opacity:1;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+    <div class="guia-sigilo" id="guiaSigilo"></div>
+
+    <div class="instrucao" id="instrucao">
+        Fecha o círculo para ativar o feitiço
+    </div>
+
+    <div class="mensagem-oculta" id="mensagem">
+
+        <h1>Bird of Light Beacon</h1>
+
+        <p>
+            Espero que gostes deste grimório de
+            <strong>The Witch Hat Atelier</strong>.
+        </p>
+
+        <p>
+            Que as tuas próprias linhas e desenhos criem magia no teu mundo.
+            Parabéns!
+        </p>
+
+    </div>
+
+    <canvas id="canvasMagico"></canvas>
+
+</div>
+
+<script>
+
+const canvas = document.getElementById('canvasMagico');
+const ctx = canvas.getContext('2d');
+
+const mensagem = document.getElementById('mensagem');
+const instrucao = document.getElementById('instrucao');
+const guiaSigilo = document.getElementById('guiaSigilo');
+
+function redimensionarCanvas(){
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    configurarEstiloTraco();
+}
+
+let desenhando = false;
+let feiticoAtivado = false;
+
+let pontosIniciais = null;
+
+let passouNorte = false;
+let passouSul = false;
+let passouEste = false;
+let passouOeste = false;
+
+// =========================================
+// ESTILO DO TRAÇO
+// =========================================
+
+function configurarEstiloTraco(){
+
+    ctx.strokeStyle = 'rgba(30, 25, 38, 0.85)';
+
+    ctx.lineWidth = 6;
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#ffeaa7';
+}
+
+window.addEventListener('resize', redimensionarCanvas);
+
+redimensionarCanvas();
+
+// =========================================
+// DESENHO
+// =========================================
+
+function iniciarDesenho(e){
+
+    if(feiticoAtivado) return;
+
+    desenhando = true;
+
+    const pos = obterPosicao(e);
+
+    pontosIniciais = pos;
+
+    ctx.beginPath();
+
+    ctx.moveTo(pos.x, pos.y);
+}
+
+function desenhar(e){
+
+    if(!desenhando || feiticoAtivado) return;
+
+    const pos = obterPosicao(e);
+
+    ctx.lineTo(pos.x, pos.y);
+
+    ctx.stroke();
+
+    const centroX = window.innerWidth / 2;
+    const centroY = window.innerHeight / 2;
+
+    const angulo = Math.atan2(
+        pos.y - centroY,
+        pos.x - centroX
+    ) * (180 / Math.PI);
+
+    if(angulo > -110 && angulo < -70) passouNorte = true;
+    if(angulo > 70 && angulo < 110) passouSul = true;
+    if(angulo > -20 && angulo < 20) passouEste = true;
+    if(angulo > 160 || angulo < -160) passouOeste = true;
+
+    if(
+        passouNorte &&
+        passouSul &&
+        passouEste &&
+        passouOeste
+    ){
+
+        const distanciaAoInicio = Math.hypot(
+            pos.x - pontosIniciais.x,
+            pos.y - pontosIniciais.y
+        );
+
+        if(distanciaAoInicio < 60){
+
+            ativarMagia();
+        }
+    }
+}
+
+function pararDesenho(){
+
+    desenhando = false;
+
+    if(!feiticoAtivado){
+
+        passouNorte = false;
+        passouSul = false;
+        passouEste = false;
+        passouOeste = false;
+    }
+}
+
+// =========================================
+// POSIÇÃO CORRETA
+// =========================================
+
+function obterPosicao(e){
+
+    const rect = canvas.getBoundingClientRect();
+
+    const clienteX = e.touches
+        ? e.touches[0].clientX
+        : e.clientX;
+
+    const clienteY = e.touches
+        ? e.touches[0].clientY
+        : e.clientY;
+
+    return {
+        x: clienteX - rect.left,
+        y: clienteY - rect.top
+    };
+}
+
+// =========================================
+// EVENTOS
+// =========================================
+
+canvas.addEventListener('mousedown', iniciarDesenho);
+canvas.addEventListener('mousemove', desenhar);
+canvas.addEventListener('mouseup', pararDesenho);
+
+canvas.addEventListener('touchstart', iniciarDesenho);
+canvas.addEventListener('touchmove', desenhar);
+canvas.addEventListener('touchend', pararDesenho);
+
+// =========================================
+// PARTÍCULAS FLUIDAS
+// =========================================
+
+let particulas = [];
+
+class Particula{
+
+    constructor(){
+
+        this.x =
+            Math.random() * canvas.width;
+
+        this.y =
+            Math.random() * canvas.height;
+
+        this.vx =
+            (Math.random() - 0.5) * 1.8;
+
+        this.vy =
+            (Math.random() - 0.5) * 1.8;
+
+        this.tamanho =
+            Math.random() * 2 + 0.5;
+
+        this.vida = 120;
+
+        this.opacidade = 1;
+
+        this.oscilacao =
+            Math.random() * Math.PI * 2;
+
+        const cores = [
+            '#ffeaa7',
+            '#fff5c3',
+            '#fff9e6',
+            '#ffd36b'
+        ];
+
+        this.cor =
+            cores[
+                Math.floor(
+                    Math.random() * cores.length
+                )
+            ];
+    }
+
+    atualizar(){
+
+        this.oscilacao += 0.03;
+
+        // movimento fluido
+
+        this.x +=
+            this.vx +
+            Math.cos(this.oscilacao) * 0.4;
+
+        this.y +=
+            this.vy +
+            Math.sin(this.oscilacao) * 0.4;
+
+        // desaceleração leve
+
+        this.vx *= 0.995;
+        this.vy *= 0.995;
+
+        this.vida--;
+
+        this.opacidade =
+            this.vida / 120;
+    }
+
+    desenhar(){
+
+        ctx.save();
+
+        ctx.globalAlpha =
+            this.opacidade;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            this.x,
+            this.y,
+            this.tamanho,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = this.cor;
+
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.cor;
+
+        ctx.fill();
+
+        ctx.restore();
+    }
+}
+
+function criarParticulas(){
+
+    for(let i = 0; i < 220; i++){
+
+        particulas.push(
+            new Particula()
+        );
+    }
+}
+
+function animarParticulas(){
+
+    requestAnimationFrame(animarParticulas);
+
+    for(
+        let i = particulas.length - 1;
+        i >= 0;
+        i--
+    ){
+
+        const p = particulas[i];
+
+        p.atualizar();
+
+        p.desenhar();
+
+        if(p.vida <= 0){
+
+            particulas.splice(i, 1);
+        }
+    }
+}
+
+animarParticulas();
+
+// =========================================
+// MAGIA
+// =========================================
+
+function ativarMagia(){
+
+    feiticoAtivado = true;
+
+    desenhando = false;
+
+    // brilho final do círculo
+
+    ctx.strokeStyle = '#fff9e6';
+
+    ctx.shadowBlur = 40;
+    ctx.shadowColor = '#ffeaa7';
+
+    ctx.lineWidth = 10;
+
+    ctx.stroke();
+
+    // partículas suaves no ecrã
+
+    criarParticulas();
+
+    setTimeout(() => {
+
+        criarParticulas();
+
+    }, 250);
+
+    setTimeout(() => {
+
+        criarParticulas();
+
+    }, 500);
+
+    // revelar mensagem
+
+    setTimeout(() => {
+
+        canvas.classList.add('desaparecer');
+
+        guiaSigilo.classList.add('esconder');
+
+        mensagem.classList.add('revelada');
+
+        instrucao.remove();
+
+    }, 2200);
+}
+
+</script>
+
+</body>
+</html>
